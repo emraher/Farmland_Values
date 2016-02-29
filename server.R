@@ -12,6 +12,8 @@ library(rgdal)
 
 shinyServer(function(input, output) {
 
+  # DATA MANIPULATION ----------------------------------------------------------
+
   dataset <- read.csv("data/data.csv")
   # Convert value from integer to numeric
   dataset$Value <- as.numeric(dataset$Value)
@@ -33,6 +35,17 @@ shinyServer(function(input, output) {
   # Check NAs in Value and change to zeros
   states@data[is.na(states@data)] <- 0
 
+  # LET USER DOWNLOAD DATA SETS ------------------------------------------------
+  # Create data for download
+  data_user_down <- reactive({
+    subset(dataset, dataset$state_name %in% input$stateInputDown)
+  })
+
+  Index <- reactive({
+    data.frame(state = data_user_down()$state_name, year = data_user_down()$year, Index = (data_user_down()$Value / data_user_down()[data_user_down()$year == input$Index, "Value"]) * 100)
+  })
+
+
   # Let user download the data
   output$downloadData <- downloadHandler(
     filename = function() {
@@ -43,23 +56,8 @@ shinyServer(function(input, output) {
     }
   )
 
-  # Create data for plot
-  data_plot <- reactive({
-    subset(dataset, dataset$state_name %in% input$stateInput & (year >= input$dateRange[1] & year <= input$dateRange[2]))
-  })
 
-
-  # Create data for calculations
-  data_user <- reactive({
-    subset(dataset, dataset$state_name %in% input$stateInput)
-  })
-
-  # Create index ------> THIS IS WHERE YOU CHOOSE THE YEAR (1982)
-  Index <- reactive({
-    data.frame(state = data_user()$state_name, year = data_user()$year, Index = (data_user()$Value / data_user()[data_user()$year == "1982", "Value"]) * 100)
-  })
-
-  # Let user download the index
+  # Let user download the index for state
   output$downloadIndex <- downloadHandler(
     filename = function() {
       paste("index", '.csv', sep = '')
@@ -75,38 +73,62 @@ shinyServer(function(input, output) {
       paste("state", '.csv', sep = '')
     },
     content = function(file) {
-      write.csv(data_user(), file)
+      write.csv(data_user_down(), file)
     }
   )
+
+  # CALCULATIONS ---------------------------------------------------------------
+  # Create data for calculations
+  data_user_calc1 <- reactive({
+    subset(dataset, dataset$state_name %in% input$stateInput1)
+  })
+  data_user_calc2 <- reactive({
+    subset(dataset, dataset$state_name %in% input$stateInput2)
+  })
+
   # Calculate results from user input
   # PART 1
+  # Create index
+  Index1 <- reactive({
+    data.frame(state = data_user_calc1()$state_name, year = data_user_calc1()$year, Index = (data_user_calc1()$Value / data_user_calc1()[data_user_calc1()$year == input$indexYear1, "Value"]) * 100)
+  })
+
   IndexPast1 <- reactive({
-    subset(Index(), year == as.numeric(input$past1))[[3]]
+    subset(Index1(), year == as.numeric(input$past1))[[3]]
   })
 
   IndexCurrent1 <- reactive({
-    subset(Index(), year == as.numeric(input$current1))[[3]]
+    subset(Index1(), year == as.numeric(input$current1))[[3]]
   })
 
   output$IndexPast1    <- renderPrint({IndexPast1()})
   output$IndexCurrent1 <- renderPrint({IndexCurrent1()})
-  output$estpast <- renderPrint({input$valuecurrent * (IndexPast1()/IndexCurrent1())})
+  output$estpast <- renderPrint({input$valuecurrent1 * (IndexPast1()/IndexCurrent1())})
 
-  # Calculate results from user input
+
   # PART 2
+  # Create index
+  Index2 <- reactive({
+    data.frame(state = data_user_calc2()$state_name, year = data_user_calc2()$year, Index = (data_user_calc2()$Value / data_user_calc2()[data_user_calc2()$year == input$indexYear2, "Value"]) * 100)
+  })
 
   IndexPast2 <- reactive({
-    subset(Index(), year == as.numeric(input$past2))[[3]]
+    subset(Index2(), year == as.numeric(input$past2))[[3]]
   })
 
   IndexCurrent2 <- reactive({
-    subset(Index(), year == as.numeric(input$current2))[[3]]
+    subset(Index2(), year == as.numeric(input$current2))[[3]]
   })
 
   output$IndexPast2    <- renderPrint({IndexPast2()})
   output$IndexCurrent2 <- renderPrint({IndexCurrent2()})
   output$estcurrent <- renderPrint({input$valuepast * (IndexCurrent2()/IndexPast2())})
 
+  # TIME SERIES PLOT -----------------------------------------------------------
+  # Create data for plot
+  data_plot <- reactive({
+    subset(dataset, dataset$state_name %in% input$stateInput & (year >= input$dateRange[1] & year <= input$dateRange[2]))
+  })
 
   # Create Plot
   output$indexPlot <- renderPlot({
@@ -116,9 +138,6 @@ shinyServer(function(input, output) {
       theme(text = element_text(size = 20), axis.title.y = element_text(margin = margin(0,20,0,0)))
 
   })
-
-
-
 
   # CREATE MAP -----------------------------------------------------------------
 
