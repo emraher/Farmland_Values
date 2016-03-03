@@ -1,6 +1,7 @@
 ## ui.R ##
 library(shinydashboard)
 library(leaflet)
+library(dygraphs)
 library(RColorBrewer)
 
 
@@ -99,12 +100,12 @@ h4(a("Estimating Arkansas Farmland Values Based on Historic Index Numbers", href
     tabItem(tabName = "plot",
             # CHOOSE YEAR - CHOOSE STATE
             fluidRow(
-              column(6, align = "center",
-                     sliderInput("dateRange",
-                                 label = strong("Choose a Date Range"),
-                                 min = 1950, max = 2015,
-                                 value = c(1950, 2015), sep = "")),
-              column(6, align = "center",
+              # column(6, align = "center",
+              #        sliderInput("dateRange",
+              #                    label = strong("Choose a Date Range"),
+              #                    min = 1950, max = 2015,
+              #                    value = c(1950, 2015), sep = "")),
+              column(12, align = "center",
                      selectInput("stateInput",
                                  label = strong("Choose a State"),
                                  choices = c("ALABAMA", "ARIZONA", "ARKANSAS", "CALIFORNIA", "COLORADO", "CONNECTICUT", "DELAWARE", "FLORIDA", "GEORGIA", "IDAHO", "ILLINOIS", "INDIANA", "IOWA", "KANSAS", "KENTUCKY", "LOUISIANA", "MAINE", "MARYLAND", "MASSACHUSETTS", "MICHIGAN", "MINNESOTA", "MISSISSIPPI", "MISSOURI", "MONTANA", "NEBRASKA", "NEVADA", "NEW HAMPSHIRE", "NEW JERSEY", "NEW MEXICO", "NEW YORK", "NORTH CAROLINA", "NORTH DAKOTA", "OHIO", "OKLAHOMA", "OREGON", "PENNSYLVANIA", "RHODE ISLAND", "SOUTH CAROLINA", "SOUTH DAKOTA", "TENNESSEE", "TEXAS", "UTAH", "VERMONT", "VIRGINIA", "WASHINGTON", "WEST VIRGINIA", "WISCONSIN", "WYOMING"),
@@ -112,7 +113,8 @@ h4(a("Estimating Arkansas Farmland Values Based on Historic Index Numbers", href
               )
             ),
             # PLOT DATA
-            plotOutput('indexPlot')
+            #plotOutput('indexPlot')
+            dygraphOutput("dygraph")
     ),
 
     # TAB CONTENT (CALCULATE) --------------------------------------------------

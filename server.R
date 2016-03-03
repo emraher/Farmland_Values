@@ -1,9 +1,11 @@
 library(shiny)
 library(dplyr)
+library(reshape)
 library(tidyr)
 library(magrittr)
-library(ggplot2)
-library(ggthemes)
+library(dygraphs)
+#library(ggplot2)
+#library(ggthemes)
 library(leaflet)
 library(RColorBrewer)
 library(maps)
@@ -15,10 +17,23 @@ shinyServer(function(input, output) {
   # DATA MANIPULATION ----------------------------------------------------------
 
   dataset <- read.csv("data/data.csv")
+
   # Convert value from integer to numeric
   dataset$Value <- as.numeric(dataset$Value)
+  # Convert factor to character
+  dataset$state_name <- as.character(dataset$state_name)
+
+  # United States Average
+  usa_data <- aggregate(dataset[,"Value"], list(dataset$year), mean)
+  colnames(usa_data) <- c("year", "Value")
+  usa_data$state_name <- "UNITED STATES AVERAGE"
+  usa_data <-   usa_data[,c(3,1,2)]
+  # Merge US data
+  dataset <- rbind(dataset, usa_data)
+
   # Convert year values to columns
   data_merge_state <- spread(dataset, year, Value)
+
   # Change column names of data to be merged
   colnames(data_merge_state) <- c("state_name", paste0("Value_",   colnames(data_merge_state[2:length(data_merge_state)])))
   # Read shapefile
@@ -126,19 +141,35 @@ shinyServer(function(input, output) {
 
   # TIME SERIES PLOT -----------------------------------------------------------
   # Create data for plot
+  # data_plot <- reactive({
+  #   subset(dataset, dataset$state_name %in% c(input$stateInput, "UNITED STATES AVERAGE") & (year >= input$dateRange[1] & year <= input$dateRange[2]))
+  # })
+
   data_plot <- reactive({
-    subset(dataset, dataset$state_name %in% input$stateInput & (year >= input$dateRange[1] & year <= input$dateRange[2]))
+    subset(dataset, dataset$state_name %in% c(input$stateInput, "UNITED STATES AVERAGE")) %>% spread(state_name, Value)
   })
+
 
   # Create Plot
-  output$indexPlot <- renderPlot({
-
-    ggplot(data_plot(), aes(year, Value)) + geom_line(size = 2, colour = "red") +
-      xlab("") + ylab("Dollars per Acres") + theme_economist() +
-      theme(text = element_text(size = 20), axis.title.y = element_text(margin = margin(0,20,0,0)))
-
-  })
-
+  # output$indexPlot <- renderPlot({
+  #
+  #   ggplot(data_plot()) + geom_line(aes(year, Value, colour = state_name), size = 2) +
+  #     xlab("") + ylab("Dollars per Acres") + theme_economist() +
+  #     theme(text = element_text(size = 20),
+  #           axis.title.y = element_text(margin = margin(0,20,0,0)),
+  #           legend.position = "bottom",
+  #           legend.direction = "horizontal",
+  #           legend.text = element_text(size = 15)) +
+  #     labs(colour = "")
+  #
+  # })
+  output$dygraph <- renderDygraph({
+  dygraph(data_plot(), main = "Farmland Values (Dollars per Acres)") %>% dyRangeSelector() %>%
+    dyAxis("y", label = "Dollars per Acres") %>%
+    dyOptions(drawPoints = TRUE, pointSize = 3, fillGraph = TRUE, fillAlpha = 0.4) %>%
+    dySeries(strokeWidth = 3) %>% dySeries(strokeWidth = 3) %>%
+    dyLegend(show = "follow", width = 380)
+})
   # CREATE MAP -----------------------------------------------------------------
 
   # User choice for year

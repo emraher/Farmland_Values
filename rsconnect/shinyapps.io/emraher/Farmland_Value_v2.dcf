@@ -1,9 +1,9 @@
 name: Farmland_Value_v2
 account: emraher
 server: shinyapps.io
-appId: 86119
-bundleId: 383228
+appId: 86916
+bundleId: 386315
 url: https://emraher.shinyapps.io/Farmland_Value_v2/
-when: 1456735769.35946
+when: 1456986045.06564
 asMultiple: FALSE
 asStatic: FALSE
